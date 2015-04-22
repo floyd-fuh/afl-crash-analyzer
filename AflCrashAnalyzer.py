@@ -161,34 +161,7 @@ disassemble $eip, $eip+16
     #signals, negative on OSX, 129 and above for Linux. No harm if we go on with all of them.
     signals = (-4, -6, -11, 132, 134, 139)
     get_output_for_signals(config_gm, sf, signals)
-#    wildcard_for_run_output_files = os.path.join(sf.output_dir, "/*/*"+c.run_extension)
-#    if glob.glob(wildcard_for_run_output_files):
-#        Logger.warning("Seems like there are already results from running the binaries, skipping")
-#        Logger.warning("Remove output directory or run this command if you want to rerun:")
-#        Logger.warning("rm ", wildcard_for_run_output_files)
-#    else:
-#        Logger.info("We analyze only a couple of signals like SIGABRT, SIGSEGV, but do not care about the rest. Going for", signals)
-#        for signal in signals:
-#            Logger.info("Processing folder for output generation for signal %i" % signal)
-#            signal_folder = sf.get_folder_path_for_signal(signal)
-#            if os.path.exists(signal_folder):
-#                Logger.info("Getting stdout and stderr of runs which result in %i. Additionally running with gdb script." % signal)
-#                of = OutputFinder(c, signal_folder)
-#                if not c.target_binary_plain and not c.target_binary_asan:
-#                    Logger.warning("You didn't specify any non-instrumented binary, running tests with instrumented binaries")
-#                    of.instrumented_combined_stdout_stderr()
-#                    of.instrumented_combined_stdout_stderr(gdb_run=True)
-#                else:
-#                    Logger.info("Plain run for", signal_folder)
-#                    of.plain_combined_stdout_stderr()
-#                    Logger.info("Plain gdb run for", signal_folder)
-#                    of.plain_combined_stdout_stderr(gdb_run=True)
-#                    Logger.info("ASAN run for", signal_folder)
-#                    of.asan_combined_stdout_stderr()
-#                    #Logger.info("ASAN gdb run for", signal_folder)
-#                    #of.asan_combined_stdout_stderr(gdb_run=True)
-#            else:
-#                Logger.warning("Seems that none of the crashes results in a %i signal" % signal)
+
     
     #
     # Minimizing input files that result in interesting signals (and removing duplicates from the results) 
@@ -197,12 +170,12 @@ disassemble $eip, $eip+16
     if os.path.exists(im.output_dir):
         Logger.warning("Seems like crashes were already categorized by signal, skipping.")
         Logger.warning("Remove output directory or remove this folder if you want to rerun:", im.output_dir)
-    else:       
+    else:
+        os.mkdir(im.output_dir)
         for signal in signals:
             Logger.info("Processing folder for crash-minimizer for signal %i" % signal)
             signal_folder = sf.get_folder_path_for_signal(signal)
             im = InputMinimizer(config_gm, signal_folder)
-            os.mkdir(im.output_dir)
             if os.path.exists(signal_folder):
                 Logger.info("Minimizing inputs resulting in signal %i" % signal)
                 im.minimize_testcases()
@@ -214,7 +187,7 @@ disassemble $eip, $eip+16
     #
     # Finding signals for minimized crash files
     #
-    sf_minimized_crashes = SignalFinder(config_gm, im.output_dir, os.path.join(config_gm.output_dir, "minimized-input-per-signal"))
+    sf_minimized_crashes = SignalFinder(config_gm, im.output_dir, os.path.join(config_gm.output_dir, "minimized-inputs-per-signal"))
     if os.path.exists(sf_minimized_crashes.output_dir):
         Logger.warning("Seems like crashes were already categorized by signal, skipping.")
         Logger.warning("Remove output directory or remove this folder if you want to rerun:", sf_minimized_crashes.output_dir)

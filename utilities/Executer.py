@@ -24,7 +24,7 @@ import multiprocessing
 import Queue
 
 class Executer:
-    #TODO: more jailing of processes, so that they don't go rampage and use up all memory and such
+    #TODO: more jailing of processes, so that they don't go rampage and use up all memory and such things (especially on OSX)
     #TODO: Migrate to python 3, there is a nice timeout argument for subprocess.call
     def __init__(self, config):
         self.config = config
@@ -39,7 +39,8 @@ class Executer:
         #TODO: get rid of magic number
         signal = 9998
         try:
-            signal = q.get(True, timeout) #blocking
+            #blocking call:
+            signal = q.get(True, timeout) 
         except Queue.Empty, Queue.Full:
             pass
         p.join(1)
@@ -47,6 +48,7 @@ class Executer:
 
     
     def _get_signal_for_run(self, q, command, env={}):
+        #TODO: make stdout / stderr configurable
         signal = subprocess.call(command, shell=True)
         q.put(signal)
     

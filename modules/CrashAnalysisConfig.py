@@ -55,6 +55,7 @@ class CrashAnalysisConfig:
         #After finding crashes, we want to categorize crashes without any involvement of AFL.
         #Only use the instrumented binary if you are 100% sure the AFL compilation didn't introduce any bugs.
         #So best would be if this is a regular gcc compile, WITH symbols BUT WITHOUT ASAN, just clean.
+        #For example the binary from your OS repository
         #If you don't have such a binary, leave it as None
         #Full path necessary
         self.target_binary_plain = target_binary_plain
