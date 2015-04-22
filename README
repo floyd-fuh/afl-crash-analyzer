@@ -1,0 +1,23 @@
+Another crash analysis and triage tool for American Fuzzy Lop (AFL) results
+
+Installation:
+0. Install AFL (to your $PATH)
+1. Install exploitable gdb script if you want to use it
+2. Compile binaries (one plain, one ASAN, one instrumented is recommended) if you haven't already (see test-cases folder for examples)
+3. Start with reading AflCrashAnalyzer.py and configure the CrashAnalysisConfig object in there (examples included)
+4. Start AflCrashAnalyzer.py with python 2.7
+
+Bugs and todo's:
+- see "TODO" in code
+
+License:
+- GPL version 3
+
+Features for now:
+- crash input file deduplication (on filesize + md5)
+- running binary with each crash input file and divide the input file into folders for each signal
+- For crash input files that create signals you are interested in you can:
+  - Run the binary and put stdout/stderr into a .txt file next to the crash input file
+    - The same for ASAN enabled binaries
+    - Run the binary with gdb in batch mode and a configurable gdb script (for example including the "exploitable" gdb script)
+  
