@@ -31,10 +31,9 @@ import glob
 
 
 def get_output_for_signals(config, signal_finder, signals):
-    wildcard_for_run_output_files = os.path.join(signal_finder.output_dir, "/*/*"+config.run_extension)
+    wildcard_for_run_output_files = signal_finder.output_dir + "/*/*"+config.run_extension
     if glob.glob(wildcard_for_run_output_files):
-        Logger.warning("Seems like there are already results from running the binaries, skipping")
-        Logger.warning("Remove output directory or run this command if you want to rerun:")
+        Logger.warning("Seems like there are already results from running the binaries, skipping. Remove output directory or run this command if you want to rerun:")
         Logger.warning("rm ", wildcard_for_run_output_files)
     else:
         Logger.info("We analyze only a couple of signals like SIGABRT, SIGSEGV, but do not care about the rest. Going for", signals)
@@ -119,8 +118,9 @@ disassemble $eip, $eip+16
 #                        )
 
     #
-    # Input crashes directory operations 
+    Logger.info("Input crashes directory operations")
     #
+    
     Logger.info("Removing README.txt files")
     fdf = FileDuplicateFinder(config_gm)
     fdf.remove_readmes(config_gm.original_crashes_directory)
@@ -132,12 +132,11 @@ disassemble $eip, $eip+16
     fdf.rename_same_name_files(config_gm.original_crashes_directory)
     
     #
-    # Finding signals for all crash files
+    Logger.info("Finding signals for all crash files")
     #
     sf = SignalFinder(config_gm)
     if os.path.exists(sf.output_dir):
-        Logger.warning("Seems like crashes were already categorized by signal, skipping.")
-        Logger.warning("Remove output directory or remove this folder if you want to rerun:", sf.output_dir)
+        Logger.warning("Seems like all crashes were already categorized by signal, skipping. Remove output directory or remove this folder if you want to rerun:", sf.output_dir)
     else:
         Logger.info("Dividing files to output folder according to their signal")
         os.mkdir(sf.output_dir)
@@ -145,7 +144,7 @@ disassemble $eip, $eip+16
         
     
     #
-    # Running binaries to discover stdout/stderr, gdb and ASAN output for crash files that result in interesting signals
+    Logger.info("Running binaries to discover stdout/stderr, gdb and ASAN output for crash files that result in interesting signals")
     #
     #signals, negative on OSX, 129 and above for Linux. No harm if we go on with all of them.
     signals = (-4, -6, -11, 132, 134, 139)
@@ -153,16 +152,15 @@ disassemble $eip, $eip+16
 
     
     #
-    # Minimizing input files that result in interesting signals (and removing duplicates from the results) 
+    Logger.info("Minimizing input files that result in interesting signals (and removing duplicates from the results)")
     #
     im = InputMinimizer(config_gm)
     if os.path.exists(im.output_dir):
-        Logger.warning("Seems like crashes were already categorized by signal, skipping.")
-        Logger.warning("Remove output directory or remove this folder if you want to rerun:", im.output_dir)
+        Logger.warning("Seems like minimized crashes were already categorized by signal, skipping. Remove output directory or remove this folder if you want to rerun:", im.output_dir)
     else:
         os.mkdir(im.output_dir)
         for signal in signals:
-            Logger.info("Processing folder for crash-minimizer for signal %i" % signal)
+            Logger.info("Processing minimized folder for crash-minimizer for signal %i" % signal)
             signal_folder = sf.get_folder_path_for_signal(signal)
             im = InputMinimizer(config_gm, signal_folder)
             if os.path.exists(signal_folder):
@@ -174,7 +172,7 @@ disassemble $eip, $eip+16
         fdf.delete_duplicates_recursively(im.output_dir)
         
     #
-    # Finding signals for minimized crash files
+    Logger.info("Finding signals for minimized crash files")
     #
     sf_minimized_crashes = SignalFinder(config_gm, im.output_dir, os.path.join(config_gm.output_dir, "minimized-inputs-per-signal"))
     if os.path.exists(sf_minimized_crashes.output_dir):
@@ -187,7 +185,7 @@ disassemble $eip, $eip+16
         
     
     #
-    # Running binaries to discover stdout/stderr, gdb and ASAN output for minimized input files that result in interesting signals
+    Logger.info("Running binaries to discover stdout/stderr, gdb and ASAN output for minimized input files that result in interesting signals")
     #
     get_output_for_signals(config_gm, sf_minimized_crashes, signals)
     
