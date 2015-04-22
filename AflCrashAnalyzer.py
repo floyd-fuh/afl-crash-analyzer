@@ -86,7 +86,7 @@ printf "[+] info reg:\n"
 info reg
 printf "[+] exploitable:\n"
 exploitable
-printf "[+] disassemble $rip, $rip+16:\n"
+printf "[+] disassemble $eip, $eip+16:\n"
 disassemble $eip, $eip+16
 """
     where_this_python_script_lives = os.path.dirname(os.path.realpath(__file__))
@@ -181,6 +181,7 @@ disassemble $eip, $eip+16
         Logger.warning("Seems like crashes were already categorized by signal, skipping.")
         Logger.warning("Remove output directory or remove this folder if you want to rerun:", sf_minimized_crashes.output_dir)
     else:
+        os.mkdir(sf_minimized_crashes.output_dir)
         Logger.info("Dividing files to output folder according to their signal")
         sf_minimized_crashes.divide_by_signal(0)
         
