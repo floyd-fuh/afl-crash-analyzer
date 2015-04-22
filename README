@@ -1,4 +1,6 @@
-Another crash analysis and triage tool for American Fuzzy Lop (AFL) results.
+afl crash analyzer: Another crash analysis and triage tool for American Fuzzy Lop (AFL) results.
+
+At the moment very alpha.
 
 Goals of this project:
 - Simple, flexible python scripts for crash analysis
