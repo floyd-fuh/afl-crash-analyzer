@@ -61,18 +61,7 @@ def get_output_for_signals(config, signal_finder, signals):
                 Logger.warning("Seems that none of the crashes results in a %i signal" % signal)
 
 def main():
-    #A couple of notes: 
-    # - program assume you have all AFL binaries in your $PATH! (aka make install)
-    # - The binary is started as: /opt/binary-instrumented args_before input-file args_after
-    # - You might want to update the code for all your binaries to the newest developer version before compilation (even if you fuzzed on older version), so you filter out crashes that were fixed by the maintainer in the meantime
-    # - afl instrumented binary is the minimum, recommend is to also set at least one of the following binaries
-    # - target_binary_plain (non-instrumented, with symbols, no ASAN)
-    #   - For example: export CFLAGS="-Wall -g -fstack-protector-all -z noexecstack -D_FORTIFY_SOURCE=2" && export CC=clang && export CXX=clang++ && ./configure --disable-shared && make clean && make
-    # - target_binary_asan (non-instrumented, with symbols, with ASAN)
-    #   - For example: ASAN: export CFLAGS="-Wall -g -fsanitize=address -fno-omit-frame-pointer" && export CC=clang && export CXX=clang++ && ./configure --disable-shared && make clean && make
-    # - To get line numbers for files when running gdb, use clang's ASAN and specifiy ASAN_SYMBOLIZER_PATH, see https://code.google.com/p/address-sanitizer/wiki/Flags
-    # - When you configure the gdb script, DON'T add the "run" command at the beginning and the "quit" command at the end
-    # - This file has code that shows how *I* like to run stuff, maybe you have other preferences
+    #Read the README before you start.
     
     Logger.info("Setting up configuration")
 
