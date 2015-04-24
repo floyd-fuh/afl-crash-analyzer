@@ -21,6 +21,7 @@ Created on Apr 13, 2015
 '''
 from utilities.Logger import Logger
 from utilities.Executer import Executer
+from utilities.OutputUtility import get_new_output_file_name
 import os
 
 class OutputFinder:
@@ -69,23 +70,14 @@ class OutputFinder:
                     new_filename = filename+"-"+os.path.basename(binary)+hint
                 Logger.debug("Looking for stdout/stderr output:", command, debug_level=3)
                 if self.output_dir:
-                    output_file_name = self.get_new_output_file_name(self.output_dir, new_filename, self.config.run_extension)
+                    output_file_name = get_new_output_file_name(self.output_dir, new_filename, self.config.run_extension, self.config.max_digets)
                     new_filepath = os.path.join(self.output_dir, output_file_name)
                 else:
-                    output_file_name = self.get_new_output_file_name(path, new_filename, self.config.run_extension)
+                    output_file_name = get_new_output_file_name(path, new_filename, self.config.run_extension, self.config.max_digets)
                     new_filepath = os.path.join(path, output_file_name)
                 fp = file(new_filepath, "w")
                 executer.get_output_for_run(command, fp, env=self.config.env)
                 fp.close()
-        
-    def get_new_output_file_name(self, path, filename, extension):
-        new_filename = filename
-        i = 1
-        while os.path.exists(os.path.join(path, new_filename+extension)) and i < 10**self.config.max_digets:
-            formatstr = "%0"+str(self.config.max_digets)+"d"
-            new_number = formatstr % i
-            new_filename = filename + new_number
-            i += 1
-        return new_filename + extension
+    
         
         

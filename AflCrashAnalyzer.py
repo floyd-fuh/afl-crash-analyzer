@@ -25,6 +25,7 @@ from modules.FileDuplicateFinder import FileDuplicateFinder
 from modules.SignalFinder import SignalFinder
 from modules.OutputFinder import OutputFinder
 from modules.InputMinimizer import InputMinimizer
+from modules.FeelingLuckyExploiter import FeelingLuckyExploiter
 from utilities.Logger import Logger
 import os
 import glob
@@ -132,7 +133,7 @@ disassemble $eip, $eip+16
     fdf.rename_same_name_files(config_gm.original_crashes_directory)
     
     #
-    Logger.info("Finding signals for all crash files")
+    Logger.info("Finding signals (all crashes)")
     #
     sf = SignalFinder(config_gm)
     if os.path.exists(sf.output_dir):
@@ -144,23 +145,27 @@ disassemble $eip, $eip+16
         
     
     #
-    Logger.info("Running binaries to discover stdout/stderr, gdb and ASAN output for crash files that result in interesting signals")
+    Logger.info("Found signals (interesting signals) / Discover stdout, stderr, gdb and ASAN output")
     #
     #signals, negative on OSX, 129 and above for Linux. No harm if we go on with all of them.
     signals = (-4, -6, -11, 132, 134, 139)
     get_output_for_signals(config_gm, sf, signals)
 
+    #TODO: develop
+    #
+    # Logger.info("Found signals (interesting signals) / Analyzing exploitability")
+    #
+    #egp = ExploitableGdbPlugin(config_gm)
     
     #
-    Logger.info("Minimizing input files that result in interesting signals (and removing duplicates from the results)")
+    Logger.info("Found signals (interesting signals) / Minimizing input (afl-tmin) + deduplication")
     #
     im = InputMinimizer(config_gm)
     if os.path.exists(im.output_dir):
-        Logger.warning("Seems like minimized crashes were already categorized by signal, skipping. Remove output directory or remove this folder if you want to rerun:", im.output_dir)
+        Logger.warning("Seems like crashes were already minimized, skipping. Remove output directory or remove this folder if you want to rerun:", im.output_dir)
     else:
         os.mkdir(im.output_dir)
         for signal in signals:
-            Logger.info("Processing minimized folder for crash-minimizer for signal %i" % signal)
             signal_folder = sf.get_folder_path_for_signal(signal)
             im = InputMinimizer(config_gm, signal_folder)
             if os.path.exists(signal_folder):
@@ -172,11 +177,11 @@ disassemble $eip, $eip+16
         fdf.delete_duplicates_recursively(im.output_dir)
         
     #
-    Logger.info("Finding signals for minimized crash files")
+    Logger.info("Found signals (interesting signals) / Minimized inputs / Finding signals")
     #
     sf_minimized_crashes = SignalFinder(config_gm, im.output_dir, os.path.join(config_gm.output_dir, "minimized-inputs-per-signal"))
     if os.path.exists(sf_minimized_crashes.output_dir):
-        Logger.warning("Seems like crashes were already categorized by signal, skipping.")
+        Logger.warning("Seems like minimized crashes were already categorized by signal, skipping.")
         Logger.warning("Remove output directory or remove this folder if you want to rerun:", sf_minimized_crashes.output_dir)
     else:
         os.mkdir(sf_minimized_crashes.output_dir)
@@ -185,16 +190,31 @@ disassemble $eip, $eip+16
         
     
     #
-    Logger.info("Running binaries to discover stdout/stderr, gdb and ASAN output for minimized input files that result in interesting signals")
+    Logger.info("Found signals (interesting signals) / Minimized inputs (interested signals) / Discover stdout, stderr, gdb and ASAN output")
     #
     get_output_for_signals(config_gm, sf_minimized_crashes, signals)
     
     
+    #TODO: develop
+    
     #
-    # Analyze exploitability
+    # Logger.info("Found signals (interesting signals) / Minimized inputs (interested signals) / Analyzing exploitability")
     #
     #egp = ExploitableGdbPlugin(config_gm)
-#TODO: develop further
+    
+    
+    
+    
+    # If you are in the mood to waste a little CPU time, run this
+    Logger.info("Found signals (interesting signals) / Minimized inputs (interested signals) / Feeling lucky auto exploitation")
+    #
+    fle = FeelingLuckyExploiter(config_gm, sf_minimized_crashes.output_dir)
+    #os.mkdir(fle.output_dir)
+    fle.run_forest_run()
+    
+    
+    
+#TODO: develop
 #- peruvian were rabbit?
 #- exploitable script, something along: less `grep -l 'Exploitability Classification: EXPLOITABLE' output/per-signal/*/*gdb*`
 

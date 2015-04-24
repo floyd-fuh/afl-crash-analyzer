@@ -21,7 +21,8 @@ Created on Apr 13, 2015
 '''
 import os
 from utilities.Logger import Logger
-from modules.OutputFinder import OutputFinder
+from utilities.OutputUtility import get_new_output_file_name
+
 
 class CrashAnalysisConfig:
     def __init__(self, main_dir, target_binary_instrumented, args_before, args_after, 
@@ -128,12 +129,18 @@ class CrashAnalysisConfig:
             os.mkdir(self.tmp_dir)
         self.prepare_gdb_script()
         
-    def prepare_gdb_script(self):
+    def prepare_gdb_script(self, new_gdb_script=None):
+        if new_gdb_script is None:
+            new_gdb_script = self.gdb_script
+            output_file_path = self.gdb_script_path
+        else:
+            output_file_path = os.path.join(self.tmp_dir, get_new_output_file_name(self.tmp_dir, "gdb_script", ".txt", self.max_digets))
         #TODO: support stdin
         script_content = 'run' + os.linesep
-        script_content += self.gdb_script + os.linesep
+        script_content += new_gdb_script + os.linesep
         script_content += "quit"
-        file(self.gdb_script_path, "w").write(script_content)
+        file(output_file_path, "w").write(script_content)
+        return output_file_path
 
     def get_command_line(self, binary, filepath):
         command = '"'+binary+'"'
@@ -145,13 +152,13 @@ class CrashAnalysisConfig:
             command += " "+self.args_after
         return command
     
-    def get_gdb_command_line(self, binary, filepath):
-        if not self.gdb_script:
-            return ""
+    def get_gdb_command_line(self, binary, filepath, path_to_gdb_script=None):
+        if path_to_gdb_script is None:
+            path_to_gdb_script = self.gdb_script_path
         command = self.gdb_binary
         if self.gdb_args:
             command += ' '+self.gdb_args
-        command += ' --command="'+self.gdb_script_path+'"'
+        command += ' --command="'+path_to_gdb_script+'"'
         command += ' --args '+self.get_command_line(binary, filepath)
         return command
 
@@ -166,3 +173,11 @@ class CrashAnalysisConfig:
         else:
             command += ' '+self.get_command_line(self.target_binary_instrumented, "@@")
         return command
+    
+    def get_most_standard_binary(self):
+        if self.target_binary_plain is not None:
+            return self.target_binary_plain
+        elif self.target_binary_asan is not None:
+            return self.target_binary_asan
+        elif self.target_binary_instrumented is not None:
+            return self.target_binary_instrumented

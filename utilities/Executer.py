@@ -28,7 +28,7 @@ class Executer:
     #TODO: Migrate to python 3, there is a nice timeout argument for subprocess.call
     def __init__(self, config):
         self.config = config
-        
+        self.pipe = subprocess.PIPE
     
     def get_signal_for_run(self, command, timeout=None, env={}):
         if not timeout:
@@ -53,13 +53,24 @@ class Executer:
         q.put(signal)
     
     
-    def get_output_for_run(self, command, fp, timeout=None, env={}):
+    def get_output_for_run(self, command, stdout, timeout=None, env={}, stderr=subprocess.STDOUT):
+        output = None
         if not timeout:
             timeout = self.config.run_timeout
-        p = multiprocessing.Process(target=self._get_output_for_run, args=(command, fp, env))
+        q = multiprocessing.Queue()
+        p = multiprocessing.Process(target=self._get_output_for_run, args=(q, command, stdout, stderr, env))
         p.start()
-        p.join(timeout) #blocking
+        try:
+            #blocking call:
+            output = q.get(True, timeout) 
+        except Queue.Empty, Queue.Full:
+            pass
+        p.join(1)
+        return output
     
-    def _get_output_for_run(self, command, fp, env={}):
+    def _get_output_for_run(self, q, command, stdout, stderr, env={}):
         #TODO: add support for stdin
-        subprocess.call(command, stdin=None, stdout=fp, stderr=subprocess.STDOUT, shell=True)
+        process = subprocess.Popen(command, stdin=None, stdout=stdout, stderr=stderr, shell=True)
+        out, err = process.communicate()
+        #errcode = process.returncode
+        q.put(out)
