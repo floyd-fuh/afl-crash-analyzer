@@ -44,7 +44,6 @@ def analyze_output_and_exploitability(config, signal_finder, uninteresting_signa
             if glob.glob(wildcard_for_run_output_files):
                 Logger.warning("Seems like there are already results from running the binaries, skipping. If you want to rerun: rm", wildcard_for_run_output_files)
             else:
-                Logger.debug("Getting stdout and stderr of runs which result in %i. Additionally running with gdb script." % signal)
                 of = OutputFinder(config, signal_folder)
                 of.do_sane_output_runs()
             
