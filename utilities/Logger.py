@@ -22,7 +22,7 @@ Created on Apr 13, 2015
 class Logger():
     #TODO: use curses, use colors, etc.
     debugging_on = True
-    debug_level = 4
+    debug_level = 3
     @staticmethod
     def setDebug(level):
         Logger.debug_level = level
@@ -31,7 +31,7 @@ class Logger():
         print "[-] Error: "+str(" ".join(str(i) for i in text)) 
     @staticmethod
     def warning(*text):
-        print "[-] Warning: "+str(" ".join(str(i) for i in text)) 
+        print " [-] Warning: "+str(" ".join(str(i) for i in text)) 
     @staticmethod
     def fatal(*text):
         print "[-] Fatal Error: "+str(" ".join(str(i) for i in text))
@@ -45,4 +45,4 @@ class Logger():
         if "debug_level" in kwargs:
             level = kwargs["debug_level"]
         if level <= Logger.debug_level:
-            print "["+"+"*level+"] "+str(" ".join(str(i) for i in text))
+            print "  ["+"+"*level+"] "+str(" ".join(str(i) for i in text))

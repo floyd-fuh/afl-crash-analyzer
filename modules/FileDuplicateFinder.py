@@ -20,12 +20,14 @@ Created on Apr 13, 2015
 @author: floyd, http://floyd.ch, @floyd_ch
 '''
 import os
+import shutil
 from md5 import md5
 from utilities.Logger import Logger
 
 class FileDuplicateFinder:
-    def __init__(self, config):
+    def __init__(self, config, search_dir):
         self.config = config
+        self.search_dir = search_dir
     
     def find_duplicate_contents(self, rootdir):
         """Find duplicate files in directory tree."""
@@ -51,23 +53,23 @@ class FileDuplicateFinder:
                 else:
                     yield filepath
         
-    def delete_duplicates_recursively(self, folder_to_search_recursively):
-        Logger.info("Removing duplicates in", folder_to_search_recursively)
-        for duplicate in self.find_duplicate_contents(folder_to_search_recursively):
+    def delete_duplicates_recursively(self):
+        Logger.info("Removing duplicates in", self.search_dir)
+        for duplicate in self.find_duplicate_contents(self.search_dir):
             if duplicate.endswith(self.config.run_extension):
                 continue
             Logger.info("Deleting the duplicate file:", duplicate)
             os.remove(duplicate)
     
-    def remove_readmes(self, folder_to_search_recursively):
-        for path, _, files in os.walk(folder_to_search_recursively):
+    def remove_readmes(self):
+        for path, _, files in os.walk(self.search_dir):
             for filename in files:
                 if filename == "README.txt":
                     os.remove(os.path.join(path, filename))
 
-    def rename_same_name_files(self, folder_to_search_recursively):
+    def rename_same_name_files(self):
         filenames = []
-        for path, _, files in os.walk(folder_to_search_recursively):
+        for path, _, files in os.walk(self.search_dir):
             for filename in files:
                 i = 1
                 new_filename = filename
@@ -79,5 +81,5 @@ class FileDuplicateFinder:
                     i += 1
                 if not new_filename == filename:
                     Logger.info("Found filename that is already taken, renaming", filename, "to", new_filename)
-                    os.rename(os.path.join(path, filename), os.path.join(path, new_filename))
+                    shutil.move(os.path.join(path, filename), os.path.join(path, new_filename))
                 filenames.append(new_filename)

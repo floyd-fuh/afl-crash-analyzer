@@ -32,9 +32,11 @@ class InputMinimizer:
             self.search_dir = self.config.original_crashes_directory
         self.output_dir = output_dir
         if self.output_dir is None:
-            self.output_dir = os.path.join(self.config.output_dir, "minimized-inputs")
+            self.output_dir = self.config.default_minimized_crashes_directory
     
     def minimize_testcases(self):
+        if self.output_dir is not None and not os.path.exists(self.output_dir):
+            os.mkdir(self.output_dir)
         executer = Executer(self.config)
         for path, _, files in os.walk(self.search_dir):
             for filename in files:

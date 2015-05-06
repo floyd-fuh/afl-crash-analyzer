@@ -49,7 +49,9 @@ class Executer:
     
     def _get_signal_for_run(self, q, command, env={}):
         #TODO: make stdout / stderr configurable
-        signal = subprocess.call(command, shell=True)
+        process = subprocess.Popen(command, stdin=None, stdout=file("/dev/null"), stderr=file("/dev/null"), shell=True)
+        process.communicate()
+        signal = process.returncode
         q.put(signal)
     
     

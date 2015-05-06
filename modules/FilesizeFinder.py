@@ -53,6 +53,6 @@ class FilesizeFinder:
             if keep_old_file:
                 shutil.copyfile(path+os.path.sep+filename, new_name_path)
             else:
-                os.rename(path+os.path.sep+filename, new_name_path)
+                shutil.move(path+os.path.sep+filename, new_name_path)
             new_name = "%"+self.config.max_digets+"d" % (int(new_name)+1)
     

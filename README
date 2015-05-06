@@ -8,7 +8,7 @@ Goals of this project:
 - There is no command line argument parsing planned, but you should modify the main python script (or run it more or less in default configuration)
 
 Installation:
-0. Install AFL (to your $PATH)
+0. Install AFL (to your $PATH), prepare your linux virtual box (no, you don't want to run this memory beast on your host machine), do stuff like "sudo apt-get remove whoopsie" and whatever makes sense for a fuzzing machine
 1. Install exploitable gdb script if you want to use it
 2. Compile binaries (one plain, one ASAN, one instrumented is recommended) if you haven't already (see test-cases folder for examples)
 3. Start with reading AflCrashAnalyzer.py and configure the CrashAnalysisConfig object in there (examples included)

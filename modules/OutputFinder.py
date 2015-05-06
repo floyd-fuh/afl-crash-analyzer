@@ -32,27 +32,40 @@ class OutputFinder:
             self.search_dir = self.config.original_crashes_directory
         #output directory will be just the same place where the input file is if output_dir is None
         self.output_dir = output_dir
-        #it's going to be: fileName-binaryName-outputPrefix-gdbPrefix-config.runExtension
-        #For example: crash15-ffmpeg-
-        self.output_prefix_plain = "-plain"
-        self.output_prefix_instrumented = "-instrumented"
-        self.output_prefix_asan = "-asan"
-        self.gdb_prefix = "-gdb"
+    
+    def do_sane_output_runs(self):
+        if self.output_dir is not None and not os.path.exists(self.output_dir):
+            os.mkdir(self.output_dir)
+        if self.config.target_binary_plain is None and self.config.target_binary_asan is None:
+            Logger.warning("You didn't specify any non-instrumented binary, running tests with instrumented binaries")
+            self.instrumented_combined_stdout_stderr()
+            self.instrumented_combined_stdout_stderr(gdb_run=True)
+        else:
+            Logger.info("Plain run")
+            self.plain_combined_stdout_stderr()
+            Logger.info("Plain gdb run")
+            self.plain_combined_stdout_stderr(gdb_run=True)
+            Logger.info("ASAN run")
+            self.asan_combined_stdout_stderr()
+            #I don't know why we should run this:
+            #Logger.info("ASAN gdb run")
+            #self.asan_combined_stdout_stderr(gdb_run=True)
+    
     
     def instrumented_combined_stdout_stderr(self, gdb_run=False):
-        self._combined_stdout_stderr(self.config.target_binary_instrumented, gdb_run, self.output_prefix_instrumented)
+        self._combined_stdout_stderr(self.config.target_binary_instrumented, gdb_run, self.config.output_prefix_instrumented)
     
     def plain_combined_stdout_stderr(self, gdb_run=False):
         if not self.config.target_binary_plain:
             Logger.warning("You didn't configure a plain binary (recommended: with symbols), therefore skipping run with plain binary.")
         else:
-            self._combined_stdout_stderr(self.config.target_binary_plain, gdb_run, self.output_prefix_plain)
+            self._combined_stdout_stderr(self.config.target_binary_plain, gdb_run, self.config.output_prefix_plain)
 
     def asan_combined_stdout_stderr(self, gdb_run=False):
         if not self.config.target_binary_asan:
             Logger.warning("You didn't configure an ASAN enabled binary (recommended: with symbols), therefore skipping run with ASAN binary.")
         else:
-            self._combined_stdout_stderr(self.config.target_binary_asan, gdb_run, self.output_prefix_asan)
+            self._combined_stdout_stderr(self.config.target_binary_asan, gdb_run, self.config.output_prefix_asan)
     
     
     def _combined_stdout_stderr(self, binary, gdb_run, hint):
@@ -61,14 +74,14 @@ class OutputFinder:
             for filename in files:
                 if filename.endswith(self.config.run_extension):
                     continue
-                filepath = os.path.join(path, filename )
+                filepath = os.path.join(path, filename)
                 if gdb_run:
                     command = self.config.get_gdb_command_line(binary, filepath)
-                    new_filename = filename+"-"+os.path.basename(binary)+hint+"-gdb"
+                    new_filename = filename+"-"+os.path.basename(binary)+hint+self.config.gdb_prefix
                 else:
                     command = self.config.get_command_line(binary, filepath)
                     new_filename = filename+"-"+os.path.basename(binary)+hint
-                Logger.debug("Looking for stdout/stderr output:", command, debug_level=3)
+                Logger.debug("Looking for stdout/stderr output:", command, debug_level=4)
                 if self.output_dir:
                     output_file_name = get_new_output_file_name(self.output_dir, new_filename, self.config.run_extension, self.config.max_digets)
                     new_filepath = os.path.join(self.output_dir, output_file_name)
@@ -78,6 +91,4 @@ class OutputFinder:
                 fp = file(new_filepath, "w")
                 executer.get_output_for_run(command, fp, env=self.config.env)
                 fp.close()
-    
-        
         

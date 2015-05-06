@@ -36,18 +36,20 @@ class SignalFinder:
             self.search_dir = self.config.original_crashes_directory
         self.output_dir = output_dir
         if self.output_dir is None:
-            self.output_dir = os.path.join(self.config.output_dir, "per-signal")
+            self.output_dir = self.config.default_signal_directory
         if config.target_binary_plain:
-            Logger.info("Using", self.config.target_binary_plain, "for signal run")
+            Logger.debug("Using", self.config.target_binary_plain, "for signal run")
             self.binary_to_use = self.config.target_binary_plain
         elif config.target_binary_asan:
-            Logger.info("Using", self.config.target_binary_asan, "for signal run")
+            Logger.debug("Using", self.config.target_binary_asan, "for signal run")
             self.binary_to_use = self.config.target_binary_asan
         else:
-            Logger.info("Using", self.config.target_binary_instrumented, "for signal run")
+            Logger.debug("Using", self.config.target_binary_instrumented, "for signal run")
             self.binary_to_use = self.config.target_binary_instrumented
     
-    def divide_by_signal(self, confirmation_loops, function=shutil.copyfile):
+    def divide_by_signal(self, confirmation_loops=0, function=shutil.copyfile):
+        if self.output_dir is not None and not os.path.exists(self.output_dir):
+            os.mkdir(self.output_dir)
         ex = Executer(self.config)
         for path, _, files in os.walk(self.search_dir):
             for filename in files:
@@ -66,13 +68,21 @@ class SignalFinder:
                         Logger.info("Detected varying return codes for exactly the same run")
                         signal = SignalFinder.VARYING_SIGNAL
                         break
-                Logger.debug("We consider signal %i for input file %s" % (signal, filename))
+                Logger.debug("We consider signal %i for input file %s" % (signal, filename), debug_level=5)
                 destination_dir = self.get_folder_path_for_signal(signal)
                 if not os.path.exists(destination_dir):
                     os.mkdir(destination_dir)
                 function(filepath, os.path.join(destination_dir, filename))
     
-    def get_folder_path_for_signal(self, signal, directory=None):
+    def get_folder_path_for_signal(self, signal):
         signal_folder_name = str(signal)
         return os.path.join(self.output_dir, signal_folder_name)
 
+    def get_folder_paths_for_signals_if_exist(self, ignore_signals):
+        l = list(set(range(-500,500)) - set(ignore_signals))
+        l.sort()
+        for signal in l:
+            signal_folder = self.get_folder_path_for_signal(signal)
+            if os.path.exists(signal_folder):
+                yield signal, signal_folder
+        

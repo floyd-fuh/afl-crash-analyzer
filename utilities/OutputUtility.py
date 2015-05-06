@@ -32,6 +32,10 @@ def get_new_output_file_name(path, filename, extension, max_digets):
 
 def list_as_intervals(li, as_hex=False):
     li = list(set(li))
+    if len(li) == 1:
+        return str(li[0])
+    elif len(li) == 0:
+        return ""
     li.sort()
     out = []
     last = li[0]

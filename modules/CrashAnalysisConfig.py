@@ -48,6 +48,12 @@ class CrashAnalysisConfig:
         #a tmp directory, where they should put it:
         self.tmp_dir = os.path.join(self.output_dir, "tmp")
         
+        #When we categorize crashes by signals and no directory for output is given, this one will be used
+        self.default_signal_directory = os.path.join(self.output_dir, "per-signal")
+        
+        #When we minimize crashes and no directory for output is given, this one will be used
+        self.default_minimized_crashes_directory = os.path.join(self.output_dir, "minimized-inputs")
+        
         #Make sure this binary is instrumented (meaning compiled with afl-gcc or afl-clang), so that it can be used
         #with afl binaries (eg. afl-tmin). This is the "minimum" target binary you need.
         #Full path necessary
@@ -76,7 +82,14 @@ class CrashAnalysisConfig:
         #and the scripts will crash if you have more than 999999 files
         self.max_digets = max_digets
         
-        #the file extension for stdout/stderr output files for *ALL* files
+        #usually output filess have naming convention: fileName-binaryName-outputPrefix-gdbPrefix-runExtension
+        #Prefixes for binary type
+        self.output_prefix_plain = "-plain"
+        self.output_prefix_instrumented = "-instrumented"
+        self.output_prefix_asan = "-asan"
+        #Prefix if run with gdb
+        self.gdb_prefix = "-gdb"
+        #The file extension for *ALL* output files (for runs, eg. stdout/stderr or with gdb)
         self.run_extension = "_run.txt"
         
         #environment variables used whenever anything is executed in a shell
@@ -181,3 +194,10 @@ class CrashAnalysisConfig:
             return self.target_binary_asan
         elif self.target_binary_instrumented is not None:
             return self.target_binary_instrumented
+    
+    def get_gdb_exploitable_file_extension(self):
+        #I guess there is no point in running the "exploitable" gdb plugin over an ASAN binary
+        if self.target_binary_plain:
+            return "-"+os.path.basename(self.target_binary_plain)+self.output_prefix_plain+self.gdb_prefix+self.run_extension
+        else:
+            return "-"+os.path.basename(self.target_binary_instrumented)+self.output_prefix_instrumented+self.gdb_prefix+self.run_extension
