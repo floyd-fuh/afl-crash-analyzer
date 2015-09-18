@@ -1,7 +1,7 @@
-COMPILER_C=gcc
-COMPILER_CPP=g++
-#COMPILER_C=clang
-#COMPILER_CPP=clang++
+#COMPILER_C=gcc
+#COMPILER_CPP=g++
+COMPILER_C=clang
+COMPILER_CPP=clang++
 
 #Note: There are more disc space efficient ways, make sure you have enough disc space
 
@@ -25,6 +25,8 @@ cd ffmpeg-asan
 git pull
 cd ..
 
+
+#TODO: try if it compiles with --disable-pthreads as well, should work and is better for fuzzing with AFL
 echo "[+] Compiling ffmpeg-plain"
 cd ffmpeg-plain
 export CFLAGS="-Wall -g" && export CC=$COMPILER_C && export CXX=$COMPILER_CPP && ./configure --disable-ffplay --disable-ffprobe --disable-ffserver --disable-doc --disable-stripping --disable-shared --cc=$COMPILER_C --cxx=$COMPILER_CPP && make clean && make 

@@ -115,8 +115,6 @@ class CrashAnalysisConfig:
         #True if this binary is not reading from a file but is reading stdin
         self.is_stdin_binary = is_stdin_binary
         
-        #Do the sanity checks
-        self.sanity_check()
     
     def sanity_check(self):
         ##

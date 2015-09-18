@@ -83,3 +83,12 @@ class FileDuplicateFinder:
                     Logger.info("Found filename that is already taken, renaming", filename, "to", new_filename)
                     shutil.move(os.path.join(path, filename), os.path.join(path, new_filename))
                 filenames.append(new_filename)
+    
+    def rename_all_files(self, extension=""):
+        i = 1
+        for path, _, files in os.walk(self.search_dir):
+            for filename in files:
+                formatstr = "%0"+str(self.config.max_digets+4)+"d"
+                new_filename = formatstr % i
+                shutil.move(os.path.join(path, filename), os.path.join(path, new_filename+extension))
+                i = i+1

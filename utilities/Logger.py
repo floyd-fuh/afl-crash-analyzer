@@ -19,10 +19,12 @@
 Created on Apr 13, 2015
 @author: floyd, http://floyd.ch, @floyd_ch
 '''
+import sys
 class Logger():
     #TODO: use curses, use colors, etc.
     debugging_on = True
-    debug_level = 3
+    debug_level = 4
+    busy_inform = not debugging_on or debug_level <= 3
     @staticmethod
     def setDebug(level):
         Logger.debug_level = level
@@ -46,3 +48,7 @@ class Logger():
             level = kwargs["debug_level"]
         if level <= Logger.debug_level:
             print "  ["+"+"*level+"] "+str(" ".join(str(i) for i in text))
+    @staticmethod
+    def busy():
+        if Logger.busy_inform:
+            sys.stdout.write(".")

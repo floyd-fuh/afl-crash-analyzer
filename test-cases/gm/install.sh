@@ -1,7 +1,7 @@
-COMPILER_C=gcc
-COMPILER_CPP=g++
-#COMPILER_C=clang
-#COMPILER_CPP=clang++
+#COMPILER_C=gcc
+#COMPILER_CPP=g++
+COMPILER_C=clang
+COMPILER_CPP=clang++
 
 #Note: There are more disc space efficient ways, make sure you have enough disc space
 
@@ -15,14 +15,17 @@ fi
 echo "[+] Updating graphicsmagick-plain"
 cd graphicsmagick-plain
 hg pull
+hg update
 cd ..
 echo "[+] Updating graphicsmagick-afl"
 cd graphicsmagick-afl
 hg pull
+hg update
 cd ..
 echo "[+] Updating graphicsmagick-asan"
 cd graphicsmagick-asan
 hg pull
+hg update
 cd ..
 
 echo "[+] Compiling graphicsmagick-plain"

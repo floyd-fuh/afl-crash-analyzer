@@ -91,30 +91,38 @@ disassemble $eip, $eip+16
                             args_after="", 
                             target_binary_plain=where_this_python_script_lives+"/test-cases/gm/graphicsmagick-plain/utilities/gm", 
                             target_binary_asan=where_this_python_script_lives+"/test-cases/gm/graphicsmagick-asan/utilities/gm",
-                            env={"ASAN_SYMBOLIZER_PATH": "/usr/bin/llvm-symbolizer-3.4", "ASAN_OPTIONS": "symbolize=1:redzone=512:quarantine_size=512Mb:exitcode=1"},
+                            env={"ASAN_SYMBOLIZER_PATH": "/usr/bin/llvm-symbolizer-3.4", "ASAN_OPTIONS": "symbolize=1:redzone=512:quarantine_size=512Mb:exitcode=1:abort_on_error=1"},
                             crash_dir=where_this_python_script_lives+"/test-cases/gm/crashes",
                             gdb_script=gdb_script_32bit,
                             gdb_binary=gdb_command
                             )
     
-#    config_ffmpeg = CrashAnalysisConfig(where_this_python_script_lives, 
-#                        target_binary_instrumented=where_this_python_script_lives+"/test-cases/ffmpeg/ffmpeg-afl/ffmpeg", 
-#                        args_before="-i", 
-#                        args_after="-loglevel quiet", 
-#                        target_binary_plain=where_this_python_script_lives+"/test-cases/ffmpeg/ffmpeg-plain/ffmpeg", 
-##                        target_binary_asan=where_this_python_script_lives+"/test-cases/ffmpeg/ffmpeg-asan/ffmpeg",
-#                        env={"ASAN_SYMBOLIZER_PATH": "/usr/bin/llvm-symbolizer-3.4", "ASAN_OPTIONS": "symbolize=1:redzone=512:quarantine_size=512Mb:exitcode=1"},
-#                        crash_dir=where_this_python_script_lives+"/test-cases/ffmpeg/crashes",
-#                        gdb_script=gdb_script_32bit,
-#                        gdb_binary=gdb_command
-#                        )
-
+    config_ffmpeg = CrashAnalysisConfig(where_this_python_script_lives, 
+                        target_binary_instrumented=where_this_python_script_lives+"/test-cases/ffmpeg/ffmpeg-afl/ffmpeg", 
+                        args_before="-i", 
+                        args_after="-loglevel quiet", 
+                        target_binary_plain=where_this_python_script_lives+"/test-cases/ffmpeg/ffmpeg-plain/ffmpeg", 
+#                        target_binary_asan=where_this_python_script_lives+"/test-cases/ffmpeg/ffmpeg-asan/ffmpeg",
+                        env={"ASAN_SYMBOLIZER_PATH": "/usr/bin/llvm-symbolizer-3.4", "ASAN_OPTIONS": "symbolize=1:redzone=512:quarantine_size=512Mb:exitcode=1:abort_on_error=1"},
+                        crash_dir=where_this_python_script_lives+"/test-cases/ffmpeg/crashes",
+                        gdb_script=gdb_script_32bit,
+                        gdb_binary=gdb_command
+                        )
+    
+    chosen_config = config_gm
+    chosen_config.sanity_check()
+    
+    #TODO: For some reason the ASAN environment variables are not correctly set when given above... so let's just set it in parent process already:
+    os.environ['ASAN_SYMBOLIZER_PATH'] = "/usr/bin/llvm-symbolizer-3.4"
+    os.environ['ASAN_OPTIONS'] = "symbolize=1:redzone=512:quarantine_size=512Mb:exitcode=1:abort_on_error=1"
+    
+    
     #
     Logger.info("Input crashes directory operations")
     #
     
     Logger.info("Removing README.txt files")
-    fdf = FileDuplicateFinder(config_gm, config_gm.original_crashes_directory)
+    fdf = FileDuplicateFinder(chosen_config, chosen_config.original_crashes_directory)
     fdf.remove_readmes()
     
     Logger.info("Removing duplicates from original crashes folder (same file size + MD5)")
@@ -123,12 +131,15 @@ disassemble $eip, $eip+16
     Logger.info("Renaming files from original crashes folder so that the filename is a unique identifier. This allows us to copy all crash files into one directory (eg. for tmin output) if necessary, without name collisions")
     fdf.rename_same_name_files()
     
+    #Logger.info("Renaming files to numeric values, as some programs prefer no special chars in filenames")
+    #fdf.rename_all_files()
+    
     #
     Logger.info("Finding interesting signals (all crashes)")
     #
-    sf_all_crashes = SignalFinder(config_gm)
-    if os.path.exists(config_gm.default_signal_directory):
-        Logger.warning("Seems like all crashes were already categorized by signal, skipping. If you want to rerun: rm -r", config_gm.default_signal_directory)
+    sf_all_crashes = SignalFinder(chosen_config)
+    if os.path.exists(chosen_config.default_signal_directory):
+        Logger.warning("Seems like all crashes were already categorized by signal, skipping. If you want to rerun: rm -r", chosen_config.default_signal_directory)
     else:
         Logger.debug("Dividing files to output folder according to their signal")
         sf_all_crashes.divide_by_signal()
@@ -137,25 +148,25 @@ disassemble $eip, $eip+16
     #Uninteresting signals: We usually don't care about signals 0, 1, 2, etc. up to 128
     uninteresting_signals = range(0,129)
     
-    analyze_output_and_exploitability(config_gm, sf_all_crashes, uninteresting_signals, message_prefix="Interesting signals /")
+    analyze_output_and_exploitability(chosen_config, sf_all_crashes, uninteresting_signals, message_prefix="Interesting signals /")
         
     Logger.info("Interesting signals / Minimizing input (afl-tmin)")
-    if os.path.exists(config_gm.default_minimized_crashes_directory):
-        Logger.warning("Seems like crashes were already minimized, skipping. If you want to rerun: rm -r", config_gm.default_minimized_crashes_directory)
+    if os.path.exists(chosen_config.default_minimized_crashes_directory):
+        Logger.warning("Seems like crashes were already minimized, skipping. If you want to rerun: rm -r", chosen_config.default_minimized_crashes_directory)
     else:
         for signal, signal_folder in sf_all_crashes.get_folder_paths_for_signals_if_exist(uninteresting_signals):
             Logger.debug("Minimizing inputs resulting in signal %i" % signal)
-            im = InputMinimizer(config_gm, signal_folder)
+            im = InputMinimizer(chosen_config, signal_folder)
             im.minimize_testcases()
         
         Logger.info("Interesting signals / Minimized inputs / Deduplication")
-        fdf_minimized = FileDuplicateFinder(config_gm, config_gm.default_minimized_crashes_directory)
+        fdf_minimized = FileDuplicateFinder(chosen_config, chosen_config.default_minimized_crashes_directory)
         fdf_minimized.delete_duplicates_recursively()
         
     #
     Logger.info("Interesting signals / Minimized inputs / Finding interesting signals")
     #
-    sf_minimized_crashes = SignalFinder(config_gm, config_gm.default_minimized_crashes_directory, os.path.join(config_gm.output_dir, "minimized-per-signal"))
+    sf_minimized_crashes = SignalFinder(chosen_config, chosen_config.default_minimized_crashes_directory, os.path.join(chosen_config.output_dir, "minimized-per-signal"))
     if os.path.exists(sf_minimized_crashes.output_dir):
         Logger.warning("Seems like minimized crashes were already categorized by signal, skipping. If you want to rerun: rm -r", sf_minimized_crashes.output_dir)
     else:
@@ -164,13 +175,13 @@ disassemble $eip, $eip+16
         sf_minimized_crashes.divide_by_signal(0)
     
     
-    analyze_output_and_exploitability(config_gm, sf_minimized_crashes, uninteresting_signals, message_prefix="Interesting signals / Minimized inputs /")
+    analyze_output_and_exploitability(chosen_config, sf_minimized_crashes, uninteresting_signals, message_prefix="Interesting signals / Minimized inputs /")
     
     
 #     # If you are in the mood to waste a little CPU time, run this
 #     Logger.info("Found interesting_signals (interesting interesting_signals) / Minimized inputs (interested interesting_signals) / Feeling lucky auto exploitation")
 #     #
-#     fle = FeelingLuckyExploiter(config_gm, sf_minimized_crashes.output_dir)
+#     fle = FeelingLuckyExploiter(chosen_config, sf_minimized_crashes.output_dir)
 #     #os.mkdir(fle.output_dir)
 #     fle.run_forest_run()
     
@@ -178,7 +189,7 @@ disassemble $eip, $eip+16
 #- peruvian were rabbit?
 #- exploitable script, something along: less `grep -l 'Exploitability Classification: EXPLOITABLE' output/per-signal/*/*gdb*`
 
-    cleanup(config_gm)
+    cleanup(chosen_config)
 
 def cleanup(config):
     for path, _, files in os.walk(config.tmp_dir):

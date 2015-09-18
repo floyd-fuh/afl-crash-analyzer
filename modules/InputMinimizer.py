@@ -46,6 +46,7 @@ class InputMinimizer:
                 filepath = os.path.join(path, filename)
                 cmd = self.config.get_afl_tmin_command_line(filepath, os.path.join(self.output_dir, filename))
                 Logger.debug("Executing:", cmd)
+                Logger.busy()
                 signal = executer.get_signal_for_run(cmd, self.config.run_timeout_tmin, env=self.config.env)
                 if signal == SignalFinder.TIMEOUT_SIGNAL:
                     Logger.error("Minimizing this file took too long, aborted")

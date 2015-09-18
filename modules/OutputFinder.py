@@ -89,6 +89,7 @@ class OutputFinder:
                     output_file_name = get_new_output_file_name(path, new_filename, self.config.run_extension, self.config.max_digets)
                     new_filepath = os.path.join(path, output_file_name)
                 fp = file(new_filepath, "w")
+                Logger.busy()
                 executer.get_output_for_run(command, fp, env=self.config.env)
                 fp.close()
         

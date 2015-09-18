@@ -47,6 +47,7 @@ class SignalFinder:
             Logger.debug("Using", self.config.target_binary_instrumented, "for signal run")
             self.binary_to_use = self.config.target_binary_instrumented
     
+    
     def divide_by_signal(self, confirmation_loops=0, function=shutil.copyfile):
         if self.output_dir is not None and not os.path.exists(self.output_dir):
             os.mkdir(self.output_dir)
@@ -58,8 +59,10 @@ class SignalFinder:
                 filepath = os.path.join( path, filename )
                 command = self.config.get_command_line(self.binary_to_use, filepath)
                 Logger.debug("Executing:", command, debug_level=4)
+                Logger.busy()
                 signal = ex.get_signal_for_run(command, env=self.config.env)
                 while confirmation_loops > 0:
+                    Logger.busy()
                     new_signal = ex.get_signal_for_run(command, env=self.config.env)
                     if new_signal == signal:
                         signal = new_signal
