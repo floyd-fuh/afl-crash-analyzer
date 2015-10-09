@@ -83,7 +83,7 @@ disassemble $eip, $eip+16
     where_this_python_script_lives = os.path.dirname(os.path.realpath(__file__))
     
     gdb_command = "gdb"
-    gdb_command_osx = "/opt/local/bin/gdb-apple"
+    #gdb_command_osx = "/opt/local/bin/gdb-apple"
     
     config_gm = CrashAnalysisConfig(where_this_python_script_lives, 
                             target_binary_instrumented=where_this_python_script_lives+"/test-cases/gm/graphicsmagick-afl/utilities/gm", 
@@ -109,7 +109,7 @@ disassemble $eip, $eip+16
                         gdb_binary=gdb_command
                         )
     
-    chosen_config = config_gm
+    chosen_config = config_ffmpeg
     chosen_config.sanity_check()
     
     #TODO: For some reason the ASAN environment variables are not correctly set when given above... so let's just set it in parent process already:
@@ -186,7 +186,6 @@ disassemble $eip, $eip+16
 #     fle.run_forest_run()
     
 #TODO: develop
-#- peruvian were rabbit?
 #- exploitable script, something along: less `grep -l 'Exploitability Classification: EXPLOITABLE' output/per-signal/*/*gdb*`
 
     cleanup(chosen_config)

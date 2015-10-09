@@ -41,8 +41,7 @@ cd ..
 echo "[+] Compiling graphicsmagick-asan"
 cd graphicsmagick-asan
 #We're setting -fstack-protector-all as well
-#Attention: had issues with ASAN on ARM:
-#/usr/bin/ld.bfd.real: cannot find /usr/bin/../lib/clang/3.4/lib/linux/libclang_rt.asan-arm.a: No such file or directory
+#Attention: had issues with ASAN on ARM: checking whether the C compiler works... no
 #too lazy to debug, didn't build with ASAN on ARM
 export CFLAGS="-Wall -g -fstack-protector-all -fsanitize=address -fno-omit-frame-pointer" && export CC=$COMPILER_C && export CXX=$COMPILER_CPP && ./configure --disable-shared && make clean && make 
 cd ..

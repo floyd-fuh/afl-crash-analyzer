@@ -1,15 +1,25 @@
 afl crash analyzer: Another crash analysis and triage tool for American Fuzzy Lop (AFL) results.
 
-At the moment very alpha.
+At the moment it's working quiet nicely for me. Send me issue reports if you have issues/suggestions.
 
 Goals of this project:
 - Simple, flexible python scripts for crash analysis
-- Everything file based
-- There is no command line argument parsing planned, but you should modify the main python script (or run it more or less in default configuration)
+- Everything file based (no database)
+- There is no command line argument parsing planned, but you have to modify the main python script
+
+Features for now:
+1. crash input file deduplication (on filesize + md5)
+2. running binary with each crash input file and divide the input file into folders for each signal
+3. For crash input files that create signals you are interested in you can:
+  4. Run the binary and put stdout/stderr into a .txt file next to the crash input file
+    5. The same for ASAN enabled binaries to get ASAN output
+    6. Run the binary with gdb in batch mode and a configurable gdb script (for example including the "exploitable" gdb script). Remember: the exploitable gdb plugin lies *a lot*.
+     7. If you run the exploitable gdb plugin you can divide into subfolders again (EXPLOITABLE, PROBABLY_EXPLOITABLE, etc.)
+8. Minimize input crashes with afl-tmin, deduplication on the results and the same procedure again as described in 4.-7.
 
 Installation:
 0. Install AFL (to your $PATH)
-1. Prepare your linux virtual box, do whatever makes sense for a fuzzing machine, for example:
+1. Prepare your linux box, do whatever makes sense for a fuzzing machine, for example:
  a) sudo apt-get remove whoopsie
 2. Install exploitable gdb script if you want to use it
 3. Compile binaries (one plain, one ASAN, one instrumented is recommended) if you haven't already (see test-cases folder for examples)
@@ -18,27 +28,20 @@ Installation:
 
 A couple of notes: 
 - program assume you have all AFL binaries in your $PATH! (aka make install)
-- The target binary is started as: /opt/binary-instrumented args_before input-file args_after
+- The target binary is started as: /opt/binary-instrumented args_before input-file args_after, no stdin supported at the moment (sorry for that)
 - You might want to update the code for all your binaries to the newest developer version before compilation (even if you fuzzed on older version), so you filter out crashes that were fixed by the maintainer in the meantime. Check test-cases folder for examples.
+- You *do* want to run "peruvian were rabbit" on all your crashes (I guess at least one cycle) *before* you feed it into this program. That will help you a lot to determine exploitability.
 - afl instrumented binary is the minimum, recommend is to also set at least one of the following binaries
 - target_binary_plain (non-instrumented, with symbols, no ASAN)
 - target_binary_asan (non-instrumented, with symbols, with ASAN)
 - To get line numbers for files when running gdb, use clang's ASAN and specifiy ASAN_SYMBOLIZER_PATH (env configuration option), see https://code.google.com/p/address-sanitizer/wiki/Flags
 - When you configure the gdb script, DON'T add the "run" command at the beginning and the "quit" command at the end
+- Don't fully rely on the results of the exploitable gdb plugin. It lies.
 - The main python file has code that shows how *I* like to run stuff, maybe you have other preferences
+- Just because you get minimized crash files out of this it doesn't mean you shouldn't check their original version. You might judge differently about their exploitability.
 
 Bugs and todo's:
 - see "TODO" in code
 
 License:
-- GPL version 3
-
-Features for now:
-- crash input file deduplication (on filesize + md5)
-- running binary with each crash input file and divide the input file into folders for each signal
-- For crash input files that create signals you are interested in you can:
-  - Run the binary and put stdout/stderr into a .txt file next to the crash input file
-    - The same for ASAN enabled binaries
-    - Run the binary with gdb in batch mode and a configurable gdb script (for example including the "exploitable" gdb script)
-- Minimize input crashes with afl-tmin, deduplication on the results
-  
+- GPL version 3  
