@@ -26,9 +26,9 @@ from utilities.OutputUtility import get_new_output_file_name
 
 class CrashAnalysisConfig:
     def __init__(self, main_dir, target_binary_instrumented, args_before, args_after, 
-                 target_binary_plain=None, target_binary_asan=None, max_digets=4,
-                 env={}, crash_dir=None, output_dir=None, gdb_script=None, gdb_binary="gdb", 
-                 run_timeout=15, tmin_args=[], is_stdin_binary=False, afl_binaries_location="/usr/local/bin"):
+                 target_binary_plain=None, target_binary_asan=None, crash_dir=None, is_stdin_binary=False, tmin_args=[],
+                 run_timeout=15, max_digets=4, env={}, output_dir=None, gdb_script=None, gdb_binary="gdb", 
+                 afl_binaries_location="/usr/local/bin"):
         
         #Main directory where these scripts live, all other directories will be derived relatively from here
         self.main_dir = main_dir
@@ -112,8 +112,8 @@ class CrashAnalysisConfig:
         #How long we execute binaries until we kill them. This is for a "regular" run with an input file in seconds
         self.run_timeout = run_timeout
         
-        #How long we run afl-tmin on one input file until we kill it in seconds
-        self.run_timeout_tmin = 15*60
+        #How long we run afl-tmin on one input file until we kill it. What we do in seconds for a single run, we do in minutes for tmin.
+        self.run_timeout_tmin = self.run_timeout*60
         
         #True if this binary is not reading from a file but is reading stdin
         self.is_stdin_binary = is_stdin_binary
@@ -166,6 +166,7 @@ class CrashAnalysisConfig:
             command.extend(self.args_after)
         return command
     
+    @DeprecationWarning
     def get_command_line_shell_string(self, binary, filepath):
         command = '"'+binary+'"'
         if self.args_before:
@@ -187,6 +188,7 @@ class CrashAnalysisConfig:
         command.extend(self.get_command_line(binary, filepath))
         return command
     
+    @DeprecationWarning
     def get_gdb_command_line_shell_string(self, binary, filepath, path_to_gdb_script=None):
         if path_to_gdb_script is None:
             path_to_gdb_script = self.gdb_script_path
@@ -209,6 +211,7 @@ class CrashAnalysisConfig:
             command.extend(self.get_command_line(self.target_binary_instrumented, "@@"))
         return command
     
+    @DeprecationWarning
     def get_afl_tmin_command_line_shell_string(self, input_filepath, output_filepath):
         command = "afl-tmin"
         if self.tmin_args:

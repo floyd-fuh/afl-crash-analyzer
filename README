@@ -22,14 +22,14 @@ Installation:
 1. Prepare your linux box, do whatever makes sense for a fuzzing machine, for example:
  a) sudo apt-get remove whoopsie
 2. Install exploitable gdb script if you want to use it
-3. Compile binaries (one plain, one ASAN, one instrumented is recommended) if you haven't already (see test-cases folder for examples)
+3. Compile binaries (one plain, one ASAN, one instrumented is recommended) if you haven't already (see testcases folder for examples)
 4. Start with reading AflCrashAnalyzer.py and configure the CrashAnalysisConfig object in there (examples included)
 5. Start AflCrashAnalyzer.py with python 2.7
 
 A couple of notes: 
 - program assume you have all AFL binaries in your $PATH! (aka make install)
 - The target binary is started as: /opt/binary-instrumented args_before input-file args_after, no stdin supported at the moment (sorry for that)
-- You might want to update the code for all your binaries to the newest developer version before compilation (even if you fuzzed on older version), so you filter out crashes that were fixed by the maintainer in the meantime. Check test-cases folder for examples.
+- You might want to update the code for all your binaries to the newest developer version before compilation (even if you fuzzed on older version), so you filter out crashes that were fixed by the maintainer in the meantime. Check testcases folder for examples.
 - You *do* want to run "peruvian were rabbit" on all your crashes (I guess at least one cycle) *before* you feed it into this program. That will help you a lot to determine exploitability.
 - afl instrumented binary is the minimum, recommend is to also set at least one of the following binaries
 - target_binary_plain (non-instrumented, with symbols, no ASAN)

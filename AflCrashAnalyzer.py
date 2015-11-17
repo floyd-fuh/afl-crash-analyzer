@@ -52,7 +52,6 @@ def analyze_output_and_exploitability(config, signal_finder, uninteresting_signa
             egp = ExploitableGdbPlugin(config, signal_folder)
             egp.divide_by_exploitability()
 
-
 def main():
     #Read the README before you start.
     
@@ -107,36 +106,19 @@ gdb.execute("quit")
     gdb_command = "/usr/bin/gdb"
     #gdb_command_osx = "/opt/local/bin/gdb-apple"
     
-    config_gm = CrashAnalysisConfig(where_this_python_script_lives, 
-                            target_binary_instrumented=where_this_python_script_lives+"/test-cases/gm/graphicsmagick-afl/utilities/gm", 
-                            args_before=["identify"], 
-                            args_after=[], 
-                            target_binary_plain=where_this_python_script_lives+"/test-cases/gm/graphicsmagick-plain/utilities/gm", 
-                            target_binary_asan=where_this_python_script_lives+"/test-cases/gm/graphicsmagick-asan/utilities/gm",
-                            env={"ASAN_SYMBOLIZER_PATH": "/usr/bin/llvm-symbolizer-3.4", "ASAN_OPTIONS": "symbolize=1:redzone=512:quarantine_size=512Mb:exitcode=1:abort_on_error=1"},
-                            crash_dir=where_this_python_script_lives+"/test-cases/gm/crashes",
-                            gdb_script=gdb_script_32bit,
-                            gdb_binary=gdb_command,
-                            )
-    
-    config_ffmpeg = CrashAnalysisConfig(where_this_python_script_lives, 
-                        target_binary_instrumented=where_this_python_script_lives+"/test-cases/ffmpeg/ffmpeg-afl/ffmpeg", 
-                        args_before=["-i"], 
-                        args_after=["-loglevel", "quiet"],
-                        target_binary_plain=where_this_python_script_lives+"/test-cases/ffmpeg/ffmpeg-plain/ffmpeg", 
-#                        target_binary_asan=where_this_python_script_lives+"/test-cases/ffmpeg/ffmpeg-asan/ffmpeg",
-                        env={"ASAN_SYMBOLIZER_PATH": "/usr/bin/llvm-symbolizer-3.4", "ASAN_OPTIONS": "symbolize=1:redzone=512:quarantine_size=512Mb:exitcode=1:abort_on_error=1"},
-                        crash_dir=where_this_python_script_lives+"/test-cases/ffmpeg/crashes",
-                        gdb_script=gdb_script_32bit,
-                        gdb_binary=gdb_command,
-                        )
-    
-    chosen_config = config_gm
-    chosen_config.sanity_check()
-    
-    #TODO: For some reason the ASAN environment variables are not correctly set when given above... so let's just set it in parent process already:
+    #TODO: For some reason the ASAN environment variables are not correctly set when given to the subprocess module... so let's just set it in parent process already:
     os.environ['ASAN_SYMBOLIZER_PATH'] = "/usr/bin/llvm-symbolizer-3.4"
     os.environ['ASAN_OPTIONS'] = "symbolize=1:redzone=512:quarantine_size=512Mb:exitcode=1:abort_on_error=1"
+    env={"ASAN_SYMBOLIZER_PATH": "/usr/bin/llvm-symbolizer-3.4", "ASAN_OPTIONS": "symbolize=1:redzone=512:quarantine_size=512Mb:exitcode=1:abort_on_error=1"}
+    
+    ###
+    #This import decides which testcase/binary we want to run!
+    ###
+    from testcases.gm.Config import create_config
+    #from testcases.ffmpeg.Config import create_config
+    #see CrashAnalysisConfig for more options that get passed on by create_config
+    chosen_config = create_config(where_this_python_script_lives, env=env, gdb_script=gdb_script_32bit, gdb_binary=gdb_command)
+    chosen_config.sanity_check()
     
     #
     Logger.info("Input crashes directory operations")
@@ -165,7 +147,7 @@ gdb.execute("quit")
         Logger.debug("Dividing files to output folder according to their signal")
         sf_all_crashes.divide_by_signal()
     
-    #Interestings signals: negative on OSX, 129 and above sometimes for Linux on the shell
+    #Interestings signals: negative on OSX, 129 and above sometimes for Linux on the shell (depending on used mechanism)
     #Uninteresting signals: We usually don't care about signals 0, 1, 2, etc. up to 128
     uninteresting_signals = range(0, 129)
     
@@ -198,7 +180,9 @@ gdb.execute("quit")
     
     analyze_output_and_exploitability(chosen_config, sf_minimized_crashes, uninteresting_signals, message_prefix="Interesting signals / Minimized inputs /")
     
-    
+#TODO:
+#- Make (some) modules work as standalone applications with command line parsing
+#- The FeelingLuckyExplotier thing. Need to get a small test sample where I know it should work.
 #     # If you are in the mood to waste a little CPU time, run this
 #     Logger.info("Found interesting_signals (interesting interesting_signals) / Minimized inputs (interested interesting_signals) / Feeling lucky auto exploitation")
 #     #
