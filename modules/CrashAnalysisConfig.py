@@ -28,7 +28,7 @@ class CrashAnalysisConfig:
     def __init__(self, main_dir, target_binary_instrumented, args_before, args_after, 
                  target_binary_plain=None, target_binary_asan=None, max_digets=4,
                  env={}, crash_dir=None, output_dir=None, gdb_script=None, gdb_binary="gdb", 
-                 run_timeout=15, tmin_args="", is_stdin_binary=False):
+                 run_timeout=15, tmin_args=[], is_stdin_binary=False, afl_binaries_location="/usr/local/bin"):
         
         #Main directory where these scripts live, all other directories will be derived relatively from here
         self.main_dir = main_dir
@@ -101,7 +101,10 @@ class CrashAnalysisConfig:
         #where we write the gdb script to disc
         self.gdb_script_path = os.path.join(self.tmp_dir, "gdb_script.txt")
         self.gdb_binary = gdb_binary
-        self.gdb_args = "-q --batch"
+        self.gdb_args = ["-q", "--batch"]
+        
+        #AFL binaries location
+        self.afl_binaries_location = afl_binaries_location
         
         #tmin args
         self.tmin_args = tmin_args
@@ -154,6 +157,16 @@ class CrashAnalysisConfig:
         return output_file_path
 
     def get_command_line(self, binary, filepath):
+        command = [binary]
+        if self.args_before:
+            command.extend(self.args_before)
+        if filepath: #TODO: support stdin
+            command.append(filepath)
+        if self.args_after:
+            command.extend(self.args_after)
+        return command
+    
+    def get_command_line_shell_string(self, binary, filepath):
         command = '"'+binary+'"'
         if self.args_before:
             command += " "+self.args_before
@@ -166,17 +179,40 @@ class CrashAnalysisConfig:
     def get_gdb_command_line(self, binary, filepath, path_to_gdb_script=None):
         if path_to_gdb_script is None:
             path_to_gdb_script = self.gdb_script_path
+        command = [self.gdb_binary]
+        if self.gdb_args:
+            command.extend(self.gdb_args)
+        command.extend(['--command='+path_to_gdb_script])
+        command.extend(['--args'])
+        command.extend(self.get_command_line(binary, filepath))
+        return command
+    
+    def get_gdb_command_line_shell_string(self, binary, filepath, path_to_gdb_script=None):
+        if path_to_gdb_script is None:
+            path_to_gdb_script = self.gdb_script_path
         command = self.gdb_binary
         if self.gdb_args:
             command += ' '+self.gdb_args
         command += ' --command="'+path_to_gdb_script+'"'
         command += ' --args '+self.get_command_line(binary, filepath)
         return command
-
+    
     def get_afl_tmin_command_line(self, input_filepath, output_filepath):
+        command = [os.path.join(self.afl_binaries_location, "afl-tmin")]
+        if self.tmin_args:
+            command.extend(self.tmin_args)
+        command.extend(['-i', input_filepath])
+        command.extend(['-o', output_filepath])
+        if self.is_stdin_binary:
+            command.extend(self.get_command_line(self.target_binary_instrumented, ""))
+        else:
+            command.extend(self.get_command_line(self.target_binary_instrumented, "@@"))
+        return command
+    
+    def get_afl_tmin_command_line_shell_string(self, input_filepath, output_filepath):
         command = "afl-tmin"
         if self.tmin_args:
-            command += ' '+self.tmin_args
+            command += " "+self.tmin_args
         command += ' -i "'+input_filepath+'"'
         command += ' -o "'+output_filepath+'"'
         if self.is_stdin_binary:

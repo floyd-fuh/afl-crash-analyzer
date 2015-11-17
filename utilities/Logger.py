@@ -22,9 +22,10 @@ Created on Apr 13, 2015
 import sys
 class Logger():
     #TODO: use curses, use colors, etc.
-    debugging_on = True
-    debug_level = 4
-    busy_inform = not debugging_on or debug_level <= 3
+    #min 0, max 10 (only used up to 6 atm)
+    debug_level = 6
+    #This is the setting if you want the dots to be printed so you see the program is busy
+    busy_inform = debug_level <= 3 and False
     @staticmethod
     def setDebug(level):
         Logger.debug_level = level
@@ -52,3 +53,4 @@ class Logger():
     def busy():
         if Logger.busy_inform:
             sys.stdout.write(".")
+            sys.stdout.flush()

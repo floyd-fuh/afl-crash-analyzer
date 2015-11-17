@@ -30,6 +30,7 @@ from modules.ExploitableGdbPlugin import ExploitableGdbPlugin
 from utilities.Logger import Logger
 import os
 import glob
+import signal as signal_handler_module
 
 def analyze_output_and_exploitability(config, signal_finder, uninteresting_signals, message_prefix=""):
     for signal, signal_folder in signal_finder.get_folder_paths_for_signals_if_exist(uninteresting_signals):
@@ -51,6 +52,7 @@ def analyze_output_and_exploitability(config, signal_finder, uninteresting_signa
             egp = ExploitableGdbPlugin(config, signal_folder)
             egp.divide_by_exploitability()
 
+
 def main():
     #Read the README before you start.
     
@@ -67,6 +69,8 @@ printf "[+] exploitable:\n"
 exploitable
 printf "[+] disassemble $rip, $rip+16:\n"
 disassemble $rip, $rip+16
+printf "[+] list\n"
+list
 """
     gdb_script_32bit = r"""printf "[+] Disabling verbose and complaints\n"
 set verbose off
@@ -79,43 +83,60 @@ printf "[+] exploitable:\n"
 exploitable
 printf "[+] disassemble $eip, $eip+16:\n"
 disassemble $eip, $eip+16
+printf "[+] list\n"
+list
 """
+
+    #TODO: Make sure gdb script doesn't abort on error
+    #ignoring errors in gdb scripts: http://stackoverflow.com/questions/17923865/gdb-stops-in-a-command-file-if-there-is-an-error-how-to-continue-despite-the-er
+    gdb_script_32bit_noerror = r"""python
+def my_ignore_errors(arg):
+  try:
+    gdb.execute("print \"" + "Executing command: " + arg + "\"")
+    gdb.execute (arg)
+  except:
+    gdb.execute("print \"" + "ERROR: " + arg + "\"")
+
+my_ignore_errors("p p")
+my_ignore_errors("p p->v1")
+gdb.execute("quit")
+    """
+
     where_this_python_script_lives = os.path.dirname(os.path.realpath(__file__))
     
-    gdb_command = "gdb"
+    gdb_command = "/usr/bin/gdb"
     #gdb_command_osx = "/opt/local/bin/gdb-apple"
     
     config_gm = CrashAnalysisConfig(where_this_python_script_lives, 
                             target_binary_instrumented=where_this_python_script_lives+"/test-cases/gm/graphicsmagick-afl/utilities/gm", 
-                            args_before="identify", 
-                            args_after="", 
+                            args_before=["identify"], 
+                            args_after=[], 
                             target_binary_plain=where_this_python_script_lives+"/test-cases/gm/graphicsmagick-plain/utilities/gm", 
                             target_binary_asan=where_this_python_script_lives+"/test-cases/gm/graphicsmagick-asan/utilities/gm",
                             env={"ASAN_SYMBOLIZER_PATH": "/usr/bin/llvm-symbolizer-3.4", "ASAN_OPTIONS": "symbolize=1:redzone=512:quarantine_size=512Mb:exitcode=1:abort_on_error=1"},
                             crash_dir=where_this_python_script_lives+"/test-cases/gm/crashes",
                             gdb_script=gdb_script_32bit,
-                            gdb_binary=gdb_command
+                            gdb_binary=gdb_command,
                             )
     
     config_ffmpeg = CrashAnalysisConfig(where_this_python_script_lives, 
                         target_binary_instrumented=where_this_python_script_lives+"/test-cases/ffmpeg/ffmpeg-afl/ffmpeg", 
-                        args_before="-i", 
-                        args_after="-loglevel quiet", 
+                        args_before=["-i"], 
+                        args_after=["-loglevel", "quiet"],
                         target_binary_plain=where_this_python_script_lives+"/test-cases/ffmpeg/ffmpeg-plain/ffmpeg", 
 #                        target_binary_asan=where_this_python_script_lives+"/test-cases/ffmpeg/ffmpeg-asan/ffmpeg",
                         env={"ASAN_SYMBOLIZER_PATH": "/usr/bin/llvm-symbolizer-3.4", "ASAN_OPTIONS": "symbolize=1:redzone=512:quarantine_size=512Mb:exitcode=1:abort_on_error=1"},
                         crash_dir=where_this_python_script_lives+"/test-cases/ffmpeg/crashes",
                         gdb_script=gdb_script_32bit,
-                        gdb_binary=gdb_command
+                        gdb_binary=gdb_command,
                         )
     
-    chosen_config = config_ffmpeg
+    chosen_config = config_gm
     chosen_config.sanity_check()
     
     #TODO: For some reason the ASAN environment variables are not correctly set when given above... so let's just set it in parent process already:
     os.environ['ASAN_SYMBOLIZER_PATH'] = "/usr/bin/llvm-symbolizer-3.4"
     os.environ['ASAN_OPTIONS'] = "symbolize=1:redzone=512:quarantine_size=512Mb:exitcode=1:abort_on_error=1"
-    
     
     #
     Logger.info("Input crashes directory operations")
@@ -130,9 +151,9 @@ disassemble $eip, $eip+16
     
     Logger.info("Renaming files from original crashes folder so that the filename is a unique identifier. This allows us to copy all crash files into one directory (eg. for tmin output) if necessary, without name collisions")
     fdf.rename_same_name_files()
-    
-    #Logger.info("Renaming files to numeric values, as some programs prefer no special chars in filenames")
-    #fdf.rename_all_files()
+    #OR:
+    #Logger.info("Renaming all files to numeric values, as some programs prefer no special chars in filenames and might require a specific file extension")
+    #fdf.rename_all_files(".png")
     
     #
     Logger.info("Finding interesting signals (all crashes)")
@@ -144,9 +165,9 @@ disassemble $eip, $eip+16
         Logger.debug("Dividing files to output folder according to their signal")
         sf_all_crashes.divide_by_signal()
     
-    #Interestings signals: negative on OSX, 129 and above for Linux
+    #Interestings signals: negative on OSX, 129 and above sometimes for Linux on the shell
     #Uninteresting signals: We usually don't care about signals 0, 1, 2, etc. up to 128
-    uninteresting_signals = range(0,129)
+    uninteresting_signals = range(0, 129)
     
     analyze_output_and_exploitability(chosen_config, sf_all_crashes, uninteresting_signals, message_prefix="Interesting signals /")
         
@@ -184,9 +205,7 @@ disassemble $eip, $eip+16
 #     fle = FeelingLuckyExploiter(chosen_config, sf_minimized_crashes.output_dir)
 #     #os.mkdir(fle.output_dir)
 #     fle.run_forest_run()
-    
-#TODO: develop
-#- exploitable script, something along: less `grep -l 'Exploitability Classification: EXPLOITABLE' output/per-signal/*/*gdb*`
+
 
     cleanup(chosen_config)
 

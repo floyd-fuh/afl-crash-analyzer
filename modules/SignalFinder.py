@@ -60,10 +60,10 @@ class SignalFinder:
                 command = self.config.get_command_line(self.binary_to_use, filepath)
                 Logger.debug("Executing:", command, debug_level=4)
                 Logger.busy()
-                signal = ex.get_signal_for_run(command, env=self.config.env)
+                signal = ex.run_command(command, env=self.config.env)
                 while confirmation_loops > 0:
                     Logger.busy()
-                    new_signal = ex.get_signal_for_run(command, env=self.config.env)
+                    new_signal = ex.run_command(command, env=self.config.env)
                     if new_signal == signal:
                         signal = new_signal
                         confirmation_loops -= 1

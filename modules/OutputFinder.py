@@ -90,6 +90,6 @@ class OutputFinder:
                     new_filepath = os.path.join(path, output_file_name)
                 fp = file(new_filepath, "w")
                 Logger.busy()
-                executer.get_output_for_run(command, fp, env=self.config.env)
+                executer.run_command(command, env=self.config.env, stdout=fp, stderr=fp)
                 fp.close()
         

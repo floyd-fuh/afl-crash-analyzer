@@ -20,59 +20,75 @@ Created on Apr 13, 2015
 @author: floyd, http://floyd.ch, @floyd_ch
 '''
 import subprocess
+import signal
 import multiprocessing
 import Queue
+from utilities.Logger import Logger
 
 class Executer:
     #TODO: more jailing of processes, so that they don't go rampage and use up all memory and such things (especially on OSX)
-    #TODO: Migrate to python 3, there is a nice timeout argument for subprocess.call
+    #What we are doing here: http://stackoverflow.com/questions/4033578/how-to-limit-programs-execution-time-when-using-subprocess
+    #We send a timeout as SIGALRM and when it is reached we simply kill the process.
     def __init__(self, config):
+        self.TIMEOUT_SIGNAL = 9998
         self.config = config
-        self.pipe = subprocess.PIPE
-    
-    def get_signal_for_run(self, command, timeout=None, env={}):
-        if not timeout:
-            timeout = self.config.run_timeout
-        q = multiprocessing.Queue()
-        p = multiprocessing.Process(target=self._get_signal_for_run, args=(q, command, env))
-        p.start()
-        #TODO: get rid of magic number
-        signal = 9998
+        self.current_process = None
+        self.timeout_flag = False
+        self.sigttou_flag = False
+        
+    def _handle_alarm(self, signum, frame):
+        # If the alarm is triggered, we're still in the communicate()
+        # call, so use kill() to end the process
+        self.timeout_flag = True
         try:
-            #blocking call:
-            signal = q.get(True, timeout) 
-        except Queue.Empty, Queue.Full:
-            pass
-        p.join(1)
-        return signal
+            self.current_process.kill()
+        except OSError as ose:
+            Logger.info("Kill failed. Sometimes the process exactly exits before we try to kill it... coward. Nothing to worry about.", ose)
+    
+    def _handle_sigttou(self, signum, frame):
+        #Had some issues that when memory corruptions occured in a subprocess
+        #(no matter if shielded by multiprocess and subprocess module), 
+        #that a SIGTTOU was sent to the entire Python main process.
+        #According to https://en.wikipedia.org/wiki/SIGTTOU this
+        #results in the process being stopped (and it looks like SIGSTP on the cmd):
+        #[1]+  Stopped                 ./AflCrashAnalyzer.py
+        #Of course we don't want that. Debugging was hard but then
+        #realized after this program was stopped:
+        #$ echo $?
+        #150
+        #So that's SIGTTOU on Linux at least.
+        #This handler will prevent the process to stop.
+        self.sigttou_flag = True
+        try:
+            self.current_process.kill()
+        except OSError as ose:
+            Logger.info("Kill failed. Sometimes the process exactly exits before we try to kill it... coward. Nothing to worry about.", ose)
 
     
-    def _get_signal_for_run(self, q, command, env={}):
+    def run_command(self, command, timeout=None, env={}, stdout=file("/dev/null"), stderr=file("/dev/null")):
         #TODO: make stdout / stderr configurable
-        process = subprocess.Popen(command, stdin=None, shell=True, stdout=file("/dev/null"), stderr=file("/dev/null"))
-        process.communicate()
-        signal = process.returncode
-        q.put(signal)
-    
-    
-    def get_output_for_run(self, command, stdout, timeout=None, env={}, stderr=subprocess.STDOUT):
-        output = None
         if not timeout:
             timeout = self.config.run_timeout
-        q = multiprocessing.Queue()
-        p = multiprocessing.Process(target=self._get_output_for_run, args=(q, command, stdout, stderr, env))
-        p.start()
-        try:
-            #blocking call:
-            output = q.get(True, timeout) 
-        except Queue.Empty, Queue.Full:
-            pass
-        p.join(1)
-        return output
-    
-    def _get_output_for_run(self, q, command, stdout, stderr, env={}):
-        #TODO: add support for stdin
-        process = subprocess.Popen(command, stdin=None, stdout=stdout, stderr=stderr, shell=True)
-        out, err = process.communicate()
-        #errcode = process.returncode
-        q.put(out)
+        process = subprocess.Popen(command, stdin=None, shell=False, stdout=stdout, stderr=stderr)
+        self.current_process = process
+        signal.signal(signal.SIGALRM, self._handle_alarm)
+        #We also had a problem that memory corruptions...
+        signal.signal(signal.SIGTTOU, self._handle_sigttou)
+        signal.alarm(timeout)
+        self.timeout_flag = False
+        self.sigttou_flag = False
+        #TODO: get rid of magic number
+        ret_signal = self.TIMEOUT_SIGNAL
+        #blocking call:
+        process.communicate()
+        signal.alarm(0)
+        #This line is reached when timeout_flag was set by _handle_alarm if it was called
+        if self.timeout_flag:
+            Logger.debug("Process was killed as it exceeded the time limit", debug_level=3)
+            ret_signal = self.TIMEOUT_SIGNAL
+        elif self.sigttou_flag:
+            Logger.debug("Some memory corruption resulted in a SIGTTOU signal being thrown (usually stops process). We caught it.", debug_level=3)
+            ret_signal = signal.SIGTTOU
+        else:
+            ret_signal = process.returncode
+        return ret_signal
