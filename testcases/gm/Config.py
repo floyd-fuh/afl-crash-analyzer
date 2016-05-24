@@ -10,7 +10,8 @@ def create_config(main_dir, *args, **kwargs):
                             args_after=[], 
                             target_binary_plain=main_dir+"/testcases/gm/graphicsmagick-plain/utilities/gm", 
                             target_binary_asan=main_dir+"/testcases/gm/graphicsmagick-asan/utilities/gm",
-                            crash_dir=main_dir+"/testcases/gm/crashes",
+                            #just takes too long if we do all, so we only go through the "new" folder 
+                            crash_dir=main_dir+"/testcases/gm/crashes/new",
                             *args,
                             **kwargs
                             )

@@ -31,17 +31,22 @@ export CFLAGS="-Wall -g" && export CC=$COMPILER_C && export CXX=$COMPILER_CPP &&
 cd ..
 
 echo "[+] Compiling ffmpeg-afl"
+#On ARM on 23. April 2016 git it worked with: 
+#export CFLAGS="" && export LDFLAGS="-lpthread" && export CC=afl-clang && export CXX=afl-clang++ && ./configure --disable-pthreads --disable-ffplay --disable-ffprobe --disable-ffserver --disable-doc --disable-shared --cc=afl-clang --cxx=afl-clang++ --disable-asm && make
 cd ffmpeg-afl
 export CFLAGS="-Wall -g" && export CC=afl-$COMPILER_C && export CXX=afl-$COMPILER_CPP && ./configure --disable-pthreads --disable-ffplay --disable-ffprobe --disable-ffserver --disable-doc --disable-shared --cc=afl-$COMPILER_C --cxx=afl-$COMPILER_CPP && make clean && make 
 cd ..
 
 echo "[+] Compiling ffmpeg-asan"
 cd ffmpeg-asan
-#Usually we would set -fstack-protector-all as well, but ffmpeg's configure will complain that the compiler is not able to produce binaries
-#This is only true when ASAN and -fstack-protector-all is used (each individually is fine)
+#This was a torture to get this running, several issues here:
+#On x86 on older versions we had to remove -fstack-protector-all as ffmpeg's configure will complain that the compiler is not able to produce binaries, but seems fixed now
+#Then I ran into an issue that is a problem in a lot of programs when you try to use a sanitizer: https://savannah.gnu.org/patch/?8775
+#It won't build with ASAN when inline assembly is enabled...
+#Additionally the LDFLAGS with lpthread are necessary even when you specify --disable-pthreads... well I guess there is somewhere an unconditional import
 #Additionally (separate issue): had issues with ASAN on ARM:
 #/usr/bin/ld.bfd.real: cannot find /usr/bin/../lib/clang/3.4/lib/linux/libclang_rt.asan-arm.a: No such file or directory
 #too lazy to debug, didn't build with ASAN on ARM
-export CFLAGS="-Wall -g -fsanitize=address -fno-omit-frame-pointer" && export CC=$COMPILER_C && export CXX=$COMPILER_CPP && ./configure --disable-pthreads --disable-ffplay --disable-ffprobe --disable-ffserver --disable-doc --disable-stripping --disable-shared --cc=$COMPILER_C --cxx=$COMPILER_CPP && make clean && make 
+export LDFLAGS="-lpthread -fsanitize=address" export CFLAGS="-Wall -g -fsanitize=address -fno-omit-frame-pointer -fstack-protector-all" && export CC=$COMPILER_C && export CXX=$COMPILER_CPP && ./configure --disable-pthreads --disable-ffplay --disable-ffprobe --disable-ffserver --disable-doc --disable-stripping --disable-shared --cc=$COMPILER_C --cxx=$COMPILER_CPP --disable-inline-asm && make clean && make
 cd ..
 

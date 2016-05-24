@@ -20,7 +20,6 @@ Created on Apr 13, 2015
 @author: floyd, http://floyd.ch, @floyd_ch
 '''
 
-from modules.CrashAnalysisConfig import CrashAnalysisConfig
 from modules.FileDuplicateFinder import FileDuplicateFinder
 from modules.SignalFinder import SignalFinder
 from modules.OutputFinder import OutputFinder
@@ -30,7 +29,6 @@ from modules.ExploitableGdbPlugin import ExploitableGdbPlugin
 from utilities.Logger import Logger
 import os
 import glob
-import signal as signal_handler_module
 
 def analyze_output_and_exploitability(config, signal_finder, uninteresting_signals, message_prefix=""):
     for signal, signal_folder in signal_finder.get_folder_paths_for_signals_if_exist(uninteresting_signals):
@@ -114,7 +112,7 @@ gdb.execute("quit")
     ###
     #This import decides which testcase/binary we want to run!
     ###
-    from testcases.gm.Config import create_config
+    from testcases.ffmpeg.Config import create_config
     #from testcases.ffmpeg.Config import create_config
     #see CrashAnalysisConfig for more options that get passed on by create_config
     chosen_config = create_config(where_this_python_script_lives, env=env, gdb_script=gdb_script_32bit, gdb_binary=gdb_command)

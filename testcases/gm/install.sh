@@ -30,7 +30,7 @@ cd ..
 
 echo "[+] Compiling graphicsmagick-plain"
 cd graphicsmagick-plain
-export CFLAGS="-Wall -g" && export CC=$COMPILER_C && export CXX=$COMPILER_CPP && ./configure --disable-shared && make clean && make 
+export CFLAGS="-Wall -g -O0" && export CC=$COMPILER_C && export CXX=$COMPILER_CPP && ./configure --disable-shared && make clean && make 
 cd ..
 
 echo "[+] Compiling graphicsmagick-afl"
