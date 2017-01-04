@@ -12,6 +12,8 @@ if [ ! -d ./ffmpeg-plain ]; then
     cp -r ffmpeg-plain ffmpeg-asan
 fi
 
+#Helps for ARM: https://www.bitpi.co/2015/08/19/how-to-compile-ffmpeg-on-a-raspberry-pi/
+
 echo "[+] Updating ffmpeg-plain"
 cd ffmpeg-plain
 git pull
@@ -34,7 +36,7 @@ echo "[+] Compiling ffmpeg-afl"
 #On ARM on 23. April 2016 git it worked with: 
 #export CFLAGS="" && export LDFLAGS="-lpthread" && export CC=afl-clang && export CXX=afl-clang++ && ./configure --disable-pthreads --disable-ffplay --disable-ffprobe --disable-ffserver --disable-doc --disable-shared --cc=afl-clang --cxx=afl-clang++ --disable-asm && make
 cd ffmpeg-afl
-export CFLAGS="-Wall -g" && export CC=afl-$COMPILER_C && export CXX=afl-$COMPILER_CPP && ./configure --disable-pthreads --disable-ffplay --disable-ffprobe --disable-ffserver --disable-doc --disable-shared --cc=afl-$COMPILER_C --cxx=afl-$COMPILER_CPP && make clean && make 
+export CFLAGS="-Wall -g" && export CC=afl-$COMPILER_C && export CXX=afl-$COMPILER_CPP && ./configure --disable-pthreads --disable-ffplay --disable-ffprobe --disable-ffserver --disable-doc --disable-shared --cc=afl-$COMPILER_C --cxx=afl-$COMPILER_CPP && make clean && AFL_INST_RATIO=30 make 
 cd ..
 
 echo "[+] Compiling ffmpeg-asan"

@@ -6,7 +6,8 @@ COMPILER_CPP=clang++
 #Note: There are more disc space efficient ways, make sure you have enough disc space
 
 if [ ! -d ./graphicsmagick-plain ]; then
-    sudo apt-get install mercurial
+    sudo apt-get install mercurial clang-3.5
+	sudo apt-get install libpng-dev libpng12-dev libtiff5-dev
     hg clone http://hg.code.sf.net/p/graphicsmagick/code graphicsmagick-plain
     cp -r graphicsmagick-plain graphicsmagick-afl
     cp -r graphicsmagick-plain graphicsmagick-asan
@@ -45,4 +46,13 @@ cd graphicsmagick-asan
 #too lazy to debug, didn't build with ASAN on ARM
 export CFLAGS="-Wall -g -fstack-protector-all -fsanitize=address -fno-omit-frame-pointer" && export CC=$COMPILER_C && export CXX=$COMPILER_CPP && ./configure --disable-shared && make clean && make 
 cd ..
+
+if [ -d ./graphicsmagick-afl-outchangeabort ]; then
+	#A version of graphicsmagick that will abort when the output filename is not "tmpOutputFilename"
+	#cd graphicsmagick-afl
+	#export CFLAGS="-Wall -g" && export CC=afl-$COMPILER_C && export CXX=afl-$COMPILER_CPP && ./configure --disable-shared && make clean && make 
+	#cd ..
+	echo 123
+fi
+
 
